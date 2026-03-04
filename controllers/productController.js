@@ -15,7 +15,7 @@ const createProduct = async (req, res) => {
       description,
       price,
       category,
-      image: `/uploads/${req.file.filename}`,
+      image: req.file.path,  // Cloudinary URL
       user: req.user._id,
     });
 
@@ -121,7 +121,7 @@ const updateProduct = async (req, res) => {
     product.category = category || product.category;
 
     if (req.file) {
-      product.image = `/uploads/${req.file.filename}`;
+      product.image = req.file.path;  // Cloudinary URL
     }
 
     const updatedProduct = await product.save();
