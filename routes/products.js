@@ -7,7 +7,8 @@ const {
   getProductById,
   getSellerProducts,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  toggleFeatured
 } = require("../controllers/productController");
 
 const protect = require("../middleware/auth");
@@ -22,5 +23,6 @@ router.get("/seller/my-products", protect, getSellerProducts);
 router.post("/", protect, upload.single("image"), createProduct);
 router.put("/:id", protect, upload.single("image"), updateProduct);
 router.delete("/:id", protect, deleteProduct);
+router.put("/:id/feature", protect, toggleFeatured);
 
 module.exports = router;

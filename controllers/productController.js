@@ -134,21 +134,49 @@ const updateProduct = async (req, res) => {
 // DELETE PRODUCT
 const deleteProduct = async (req, res) => {
   try {
-    const product = await Product.findOneAndDelete({
-      _id: req.params.id,
-      user: req.user._id
-    });
+    let product;
+
+    if (req.user.role === "admin") {
+      // Admin can delete any product
+      product = await Product.findByIdAndDelete(req.params.id);
+    } else {
+      // Seller can only delete their own product
+      product = await Product.findOneAndDelete({
+        _id: req.params.id,
+        user: req.user._id
+      });
+    }
 
     if (!product) {
       return res.status(404).json({ message: "Product not found or unauthorized" });
     }
 
     // Decrease seller's product count
-    await User.findByIdAndUpdate(req.user._id, {
+    await User.findByIdAndUpdate(product.user, {
       $inc: { "stats.totalProducts": -1 }
     });
 
     res.json({ message: "Product deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// TOGGLE FEATURED
+const toggleFeatured = async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized as admin" });
+    }
+
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    product.isFeatured = !product.isFeatured;
+    const updatedProduct = await product.save();
+    res.json(updatedProduct);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -160,5 +188,6 @@ module.exports = {
   getProductById,
   getSellerProducts,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  toggleFeatured
 };

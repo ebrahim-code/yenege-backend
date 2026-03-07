@@ -79,7 +79,12 @@ const productSchema = new mongoose.Schema(
 
     tags: [{
       type: String
-    }]
+    }],
+
+    isFeatured: {
+      type: Boolean,
+      default: false
+    }
   },
   { timestamps: true }
 );

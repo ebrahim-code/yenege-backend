@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["buyer", "seller"],
+      enum: ["buyer", "seller", "admin"],
       default: "buyer"
     },
     // Seller-specific fields
@@ -37,7 +37,21 @@ const userSchema = new mongoose.Schema(
       totalSales: { type: Number, default: 0 },
       rating: { type: Number, default: 0 },
       reviewCount: { type: Number, default: 0 }
-    }
+    },
+    // E-commerce fields
+    cart: [
+      {
+        product: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+        quantity: { type: Number, default: 1 }
+      }
+    ],
+    wishlist: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "Product" }
+    ],
+    phone: { type: String },
+    address: { type: String },
+    city: { type: String },
+    country: { type: String, default: "Ethiopia" }
   },
   { timestamps: true }
 );
