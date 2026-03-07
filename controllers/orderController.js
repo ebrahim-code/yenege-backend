@@ -8,42 +8,56 @@ exports.createOrder = async (req, res) => {
     try {
         const { orderItems, shippingAddress, paymentMethod, totalAmount } = req.body;
 
-        if (orderItems && orderItems.length === 0) {
+        if (!orderItems || orderItems.length === 0) {
             return res.status(400).json({ message: "No order items" });
-        } else {
-            // For each order, we might have items from different sellers.
-            // E-commerce platforms usually split orders by seller.
-            // Let's assume frontend grouped them by seller, or we split them here.
-
-            const ordersBySeller = {};
-
-            orderItems.forEach((item) => {
-                // Assume frontend passes item.seller ID
-                const sellerId = item.seller;
-                if (!ordersBySeller[sellerId]) {
-                    ordersBySeller[sellerId] = {
-                        buyer: req.user._id,
-                        seller: sellerId,
-                        items: [],
-                        shippingAddress,
-                        paymentMethod,
-                        totalAmount: 0 // Will accumulate
-                    };
-                }
-                ordersBySeller[sellerId].items.push(item);
-                ordersBySeller[sellerId].totalAmount += item.price * item.quantity;
-            });
-
-            const orderPromises = Object.values(ordersBySeller).map(async (orderData) => {
-                const order = new Order(orderData);
-                return await order.save();
-            });
-
-            const createdOrders = await Promise.all(orderPromises);
-
-            res.status(201).json(createdOrders);
         }
+
+        // Resolve missing sellers by looking up the product
+        const resolvedItems = await Promise.all(orderItems.map(async (item) => {
+            if (!item.seller) {
+                const product = await Product.findById(item.product);
+                if (product) {
+                    item.seller = product.user;
+                }
+            }
+            return item;
+        }));
+
+        // Group items by seller
+        const ordersBySeller = {};
+        resolvedItems.forEach((item) => {
+            const sellerId = item.seller?.toString() || 'unknown';
+            if (!ordersBySeller[sellerId]) {
+                ordersBySeller[sellerId] = {
+                    buyer: req.user._id,
+                    seller: item.seller,
+                    items: [],
+                    shippingAddress,
+                    paymentMethod,
+                    totalAmount: 0
+                };
+            }
+            ordersBySeller[sellerId].items.push(item);
+            ordersBySeller[sellerId].totalAmount += item.price * item.quantity;
+        });
+
+        // Filter out any group without a valid seller
+        const validOrders = Object.values(ordersBySeller).filter(o => o.seller);
+
+        if (validOrders.length === 0) {
+            return res.status(400).json({ message: "Could not determine seller for any item" });
+        }
+
+        const orderPromises = validOrders.map(async (orderData) => {
+            const order = new Order(orderData);
+            return await order.save();
+        });
+
+        const createdOrders = await Promise.all(orderPromises);
+        res.status(201).json(createdOrders);
+
     } catch (error) {
+        console.error('Order creation error:', error);
         res.status(500).json({ message: error.message });
     }
 };
