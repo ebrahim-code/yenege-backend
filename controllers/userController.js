@@ -96,16 +96,40 @@ exports.updateUserRole = async (req, res) => {
         if (req.user.role !== "admin") {
             return res.status(403).json({ message: "Not authorized as admin" });
         }
-        const { role } = req.body;
+        const { role, verified } = req.body;
         const user = await User.findById(req.params.id);
 
         if (user) {
-            user.role = role || user.role;
+            if (role !== undefined) user.role = role;
+            if (verified !== undefined) {
+                if (!user.sellerProfile) user.sellerProfile = {};
+                user.sellerProfile.verified = verified;
+            }
             const updatedUser = await user.save();
             res.json(updatedUser);
         } else {
             res.status(404).json({ message: "User not found" });
         }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+// @desc    Delete a user (Admin)
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
+exports.deleteUser = async (req, res) => {
+    try {
+        if (req.user.role !== "admin") {
+            return res.status(403).json({ message: "Not authorized as admin" });
+        }
+        if (req.params.id === req.user._id.toString()) {
+            return res.status(400).json({ message: "Cannot delete your own admin account" });
+        }
+        const user = await User.findByIdAndDelete(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        res.json({ message: "User deleted successfully" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
