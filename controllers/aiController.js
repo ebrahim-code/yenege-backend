@@ -80,7 +80,7 @@ exports.getRecommendations = async (req, res) => {
   try {
     const { preferences, occasion, budget } = req.body;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const prompt = `As a Yenege marketplace assistant, recommend Ethiopian artisan products based on:
 - Preferences: ${preferences || 'Not specified'}
@@ -117,7 +117,7 @@ exports.sellerAssist = async (req, res) => {
   try {
     const { question, productInfo } = req.body;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const prompt = `As a Yenege marketplace seller assistant, help with the following:
 
