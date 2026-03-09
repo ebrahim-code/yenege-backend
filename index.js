@@ -1,12 +1,23 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const http = require("http");
+const { Server } = require("socket.io");
 const connectDB = require("./config/db");
 
 dotenv.config();
 connectDB();
 
 const app = express();
+const server = http.createServer(app);
+
+// Setup Socket.io
+const io = new Server(server, {
+  cors: {
+    origin: ['https://yenege-tesfa.netlify.app', 'https://yenege.netlify.app', 'http://localhost:5173', 'http://localhost:5174'],
+    credentials: true
+  }
+});
 
 app.use(cors({
   origin: ['https://yenege-tesfa.netlify.app', 'https://yenege.netlify.app', 'http://localhost:5173', 'http://localhost:5174'],
@@ -25,9 +36,39 @@ app.use("/api/messages", require("./routes/messages"));
 app.use("/api/orders", require("./routes/orders"));
 app.use("/api/ai", require("./routes/ai"));
 
+// Socket.io real-time messaging
+io.on("connection", (socket) => {
+  console.log(`User connected: ${socket.id}`);
+
+  // User joins with their userId
+  socket.on("addNewUser", (userId) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined their room`);
+  });
+
+  // Send message
+  socket.on("sendMessage", async ({ senderId, receiverId, text }) => {
+    try {
+      // Send to receiver in real-time
+      io.to(receiverId).emit("getMessage", {
+        sender: senderId,
+        text,
+        createdAt: new Date().toISOString()
+      });
+      console.log(`Message sent from ${senderId} to ${receiverId}`);
+    } catch (error) {
+      console.error("Socket send message error:", error);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log(`User disconnected: ${socket.id}`);
+  });
+});
+
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 API available at http://localhost:${PORT}/api`);
 });
