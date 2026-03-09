@@ -103,6 +103,32 @@ exports.getMyOrders = async (req, res) => {
     }
 };
 
+// @desc    Get ALL orders (Admin only)
+// @route   GET /api/orders
+// @access  Private/Admin
+exports.getAllOrders = async (req, res) => {
+    try {
+        console.log('Admin getAllOrders called by:', req.user.email, 'Role:', req.user.role);
+        
+        // Check if admin
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access denied. Admin only.' });
+        }
+        
+        // Get ALL orders without any filter, sorted by newest first
+        const orders = await Order.find({})
+            .populate('buyer', 'name email')
+            .populate('seller', 'name email sellerProfile.businessName')
+            .sort({ createdAt: -1 });
+        
+        console.log(`Found ${orders.length} total orders`);
+        res.json(orders);
+    } catch (error) {
+        console.error('Error in getAllOrders:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // @desc    Get logged in seller orders (Seller)
 // @route   GET /api/orders/sellerorders
 // @access  Private/Seller
