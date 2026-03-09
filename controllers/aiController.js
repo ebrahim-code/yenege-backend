@@ -3,7 +3,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// System prompt for Yenege marketplace context
+// Use Gemini 3 Flash model
 const SYSTEM_PROMPT = `You are an AI assistant for Yenege, an Ethiopian artisan marketplace that empowers women and preserves cultural heritage.
 
 Your role is to help users with:
@@ -32,8 +32,8 @@ exports.chat = async (req, res) => {
       return res.status(400).json({ message: 'Message is required' });
     }
 
-    // Use Gemini Pro model
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // Use Gemini Pro model (most stable)
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
     // Start chat with history
     const chat = model.startChat({
@@ -80,7 +80,7 @@ exports.getRecommendations = async (req, res) => {
   try {
     const { preferences, occasion, budget } = req.body;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
     const prompt = `As a Yenege marketplace assistant, recommend Ethiopian artisan products based on:
 - Preferences: ${preferences || 'Not specified'}
@@ -117,7 +117,7 @@ exports.sellerAssist = async (req, res) => {
   try {
     const { question, productInfo } = req.body;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
     const prompt = `As a Yenege marketplace seller assistant, help with the following:
 
