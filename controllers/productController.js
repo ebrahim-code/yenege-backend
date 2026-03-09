@@ -1,5 +1,6 @@
 const Product = require("../models/Product");
 const User = require("../models/User");
+const Notification = require("../models/Notification");
 
 // CREATE PRODUCT
 const createProduct = async (req, res) => {
@@ -20,6 +21,22 @@ const createProduct = async (req, res) => {
     });
 
     const savedProduct = await product.save();
+
+    // Notify admins about new product
+    try {
+      const admins = await User.find({ role: 'admin' });
+      const notifications = admins.map(admin => ({
+        user: admin._id,
+        type: 'new_product',
+        title: 'New Product Uploaded',
+        message: `${req.user.name} has uploaded a new product: ${title}`,
+        relatedProduct: savedProduct._id,
+        relatedUser: req.user._id
+      }));
+      await Notification.insertMany(notifications);
+    } catch (notifError) {
+      console.error('Notification error:', notifError);
+    }
 
     // Update seller's product count
     await User.findByIdAndUpdate(req.user._id, {

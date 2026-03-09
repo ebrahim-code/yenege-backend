@@ -34,6 +34,7 @@ app.use("/api/products", require("./routes/products"));
 app.use("/api/users", require("./routes/users"));
 app.use("/api/messages", require("./routes/messages"));
 app.use("/api/orders", require("./routes/orders"));
+app.use("/api/notifications", require("./routes/notifications"));
 app.use("/api/ai", require("./routes/ai"));
 
 // Socket.io real-time messaging
@@ -55,6 +56,14 @@ io.on("connection", (socket) => {
         text,
         createdAt: new Date().toISOString()
       });
+      
+      // Emit notification for new message
+      io.to(receiverId).emit("notification", {
+        type: 'new_message',
+        title: 'New Message',
+        message: 'You have received a new message'
+      });
+      
       console.log(`Message sent from ${senderId} to ${receiverId}`);
     } catch (error) {
       console.error("Socket send message error:", error);

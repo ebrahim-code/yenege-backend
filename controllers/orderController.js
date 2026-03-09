@@ -1,5 +1,7 @@
 const Order = require("../models/Order");
 const Product = require("../models/Product");
+const User = require("../models/User");
+const Notification = require("../models/Notification");
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -54,6 +56,33 @@ exports.createOrder = async (req, res) => {
         });
 
         const createdOrders = await Promise.all(orderPromises);
+        
+        // Send notifications to admin and sellers
+        try {
+            // Notify all admins about new order
+            const admins = await User.find({ role: 'admin' });
+            const adminNotifications = admins.map(admin => ({
+                user: admin._id,
+                type: 'new_order',
+                title: 'New Order Placed',
+                message: `A new order has been placed on Yenege marketplace`,
+                relatedOrder: createdOrders[0]._id
+            }));
+            await Notification.insertMany(adminNotifications);
+            
+            // Notify sellers about their orders
+            const sellerNotifications = validOrders.map((orderData, index) => ({
+                user: orderData.seller,
+                type: 'new_order',
+                title: 'New Order Received',
+                message: `You have received a new order for ${orderData.items.length} product(s)`,
+                relatedOrder: createdOrders[index]._id
+            }));
+            await Notification.insertMany(sellerNotifications);
+        } catch (notifError) {
+            console.error('Notification error:', notifError);
+        }
+        
         res.status(201).json(createdOrders);
 
     } catch (error) {

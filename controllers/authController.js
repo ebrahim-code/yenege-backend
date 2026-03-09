@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const Notification = require("../models/Notification");
 
 // Helper function to generate token
 const generateToken = (id) => {
@@ -45,6 +46,21 @@ exports.register = async (req, res) => {
     }
 
     const user = await User.create(userData);
+
+    // Notify admins about new user registration
+    try {
+      const admins = await User.find({ role: 'admin' });
+      const notifications = admins.map(admin => ({
+        user: admin._id,
+        type: 'new_user',
+        title: 'New User Registered',
+        message: `${user.name} (${user.email}) has registered as ${user.role}`,
+        relatedUser: user._id
+      }));
+      await Notification.insertMany(notifications);
+    } catch (notifError) {
+      console.error('Notification error:', notifError);
+    }
 
     const token = generateToken(user._id);
 
