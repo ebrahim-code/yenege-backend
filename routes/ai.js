@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { chat, getRecommendations, sellerAssist } = require('../controllers/aiController');
-const { protect } = require('../middleware/auth');
+const protect = require('../middleware/auth');
 
 // Public routes
 router.post('/chat', chat);
