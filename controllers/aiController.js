@@ -33,7 +33,7 @@ exports.chat = async (req, res) => {
     }
 
     // Use Gemini Pro model
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     // Start chat with history
     const chat = model.startChat({
