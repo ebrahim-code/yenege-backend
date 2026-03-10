@@ -8,17 +8,21 @@ exports.createReview = async (req, res) => {
     try {
         const { productId, rating, comment } = req.body;
 
-        // Check if user has purchased this product
-        // (Optional, but good for authentic reviews)
-        const hasPurchased = await Order.findOne({
-            buyer: req.user._id,
-            "items.product": productId,
-            status: "Delivered", // Optional: only allow review after delivery
-        });
+     // Check if user has purchased this product (case-insensitive status check)
+  const orderCheck = await Order.findOne({
+       buyer: req.user._id,
+      "items.product": productId,
+    });
+    
+    // Allow review if order exists with delivered status (any case variation)
+  const hasPurchased = orderCheck && orderCheck.status && 
+        orderCheck.status.toLowerCase() === 'delivered';
 
-        if (!hasPurchased) {
-            return res.status(400).json({ message: "You must purchase and receive the product before reviewing." });
-        }
+  if (!hasPurchased) {
+    return res.status(400).json({ 
+        message: "You must purchase and receive the product before reviewing." 
+      });
+    }
 
         const reviewExists = await Review.findOne({
             product: productId,
