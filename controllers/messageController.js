@@ -1,5 +1,7 @@
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
+const Notification= require("../models/Notification");
+const User = require("../models/User");
 
 // @desc    Create or get conversation between two users
 // @route   POST /api/messages/conversations
@@ -84,11 +86,32 @@ exports.sendMessage = async (req, res) => {
             lastMessage: {
                 text,
                 sender: req.user._id,
-                read: false
+               read: false
             }
         });
 
-        res.status(201).json(message);
+        // Get the receiver(s) - other participants in conversation
+       const conversation= await Conversation.findById(conversationId);
+       const otherParticipants = conversation.participants.filter(
+            p => p.toString() !== req.user._id.toString()
+        );
+        
+        // Create notifications for all receivers
+       if (otherParticipants.length > 0) {
+           const notifications = otherParticipants.map(participantId => ({
+               user: participantId,
+                type: 'new_message',
+                title: 'New Message Received',
+                message: text.substring(0, 100),
+               relatedUser: req.user._id
+            }));
+            
+            await Notification.insertMany(notifications);
+           console.log(`Created ${notifications.length} notifications for new message`);
+        }
+
+       res.status(201).json(message);
+
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
