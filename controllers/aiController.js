@@ -32,8 +32,8 @@ exports.chat = async (req, res) => {
       return res.status(400).json({ message: 'Message is required' });
     }
 
-    // Use Gemini Pro model (most stable)
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    // Use Gemini 1.5 Flash model (latest & most stable)
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     // Start chat with history
     const chat = model.startChat({
@@ -78,9 +78,10 @@ exports.chat = async (req, res) => {
 // @access  Public
 exports.getRecommendations = async (req, res) => {
   try {
-    const { preferences, occasion, budget } = req.body;
+   const { preferences, occasion, budget } = req.body;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    // Use Gemini 1.5 Flash model (latest & most stable)
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const prompt = `As a Yenege marketplace assistant, recommend Ethiopian artisan products based on:
 - Preferences: ${preferences || 'Not specified'}
@@ -115,9 +116,10 @@ Provide 3-5 specific product recommendations with brief explanations of why they
 // @access  Private
 exports.sellerAssist = async (req, res) => {
   try {
-    const { question, productInfo } = req.body;
+  const { question, productInfo } = req.body;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    // Use Gemini 1.5 Flash model (latest & most stable)
+ const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const prompt = `As a Yenege marketplace seller assistant, help with the following:
 
