@@ -2,7 +2,6 @@ const Order = require("../models/Order");
 const Product = require("../models/Product");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
-const sendEmail = require('../utils/sendEmail');
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -82,17 +81,6 @@ exports.createOrder = async (req, res) => {
             await Notification.insertMany(sellerNotifications);
         } catch (notifError) {
             console.error('Notification error:', notifError);
-        }
-        
-        // Send order confirmation email to buyer
-        try {
-          const buyer = await User.findById(validOrders[0].buyer);
-          if (buyer) {
-            await sendEmail.sendOrderConfirmation(buyer.email, buyer.name, createdOrders[0]);
-            console.log('Order confirmation email sent to:', buyer.email);
-          }
-        } catch (emailError) {
-          console.error('Failed to send order confirmation email:', emailError);
         }
         
         res.status(201).json(createdOrders);
