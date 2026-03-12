@@ -3,7 +3,8 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Use Gemini 3 Flash model
+const MODEL_NAME = 'gemini-3.1-flash-lite-preview';
+
 const SYSTEM_PROMPT = `You are an AI assistant for Yenege, an Ethiopian artisan marketplace that empowers women and preserves cultural heritage.
 
 Your role is to help users with:
@@ -32,8 +33,8 @@ exports.chat = async (req, res) => {
       return res.status(400).json({ message: 'Message is required' });
     }
 
-    // Use Gemini 1.5 Flash model (latest & most stable)
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // Use Gemini 3.1 Flash-Lite model
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
     // Start chat with history
     const chat = model.startChat({
@@ -80,8 +81,8 @@ exports.getRecommendations = async (req, res) => {
   try {
    const { preferences, occasion, budget } = req.body;
 
-    // Use Gemini 1.5 Flash model (latest & most stable)
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // Use Gemini 3.1 Flash-Lite model
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
     const prompt = `As a Yenege marketplace assistant, recommend Ethiopian artisan products based on:
 - Preferences: ${preferences || 'Not specified'}
@@ -118,8 +119,8 @@ exports.sellerAssist = async (req, res) => {
   try {
   const { question, productInfo } = req.body;
 
-    // Use Gemini 1.5 Flash model (latest & most stable)
- const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // Use Gemini 3.1 Flash-Lite model
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
     const prompt = `As a Yenege marketplace seller assistant, help with the following:
 
