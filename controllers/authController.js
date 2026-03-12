@@ -2,6 +2,8 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const Notification = require("../models/Notification");
+const crypto = require("crypto");
+const sendEmail = require("../utils/sendEmail");
 
 // Helper function to generate token
 const generateToken = (id) => {
@@ -34,7 +36,9 @@ exports.register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      role: role || "buyer"
+      role: role || "buyer",
+      isEmailVerified: false,
+      emailVerificationToken: crypto.randomBytes(20).toString('hex')
     };
 
     // If registering as seller, include seller profile data
@@ -62,13 +66,49 @@ exports.register = async (req, res) => {
       console.error('Notification error:', notifError);
     }
 
-    const token = generateToken(user._id);
-
-    res.status(201).json({
-      token,
-      user: formatUserResponse(user)
+    // Send verification email
+    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email/${user.emailVerificationToken}`;
+    
+    const emailSent = await sendEmail({
+      email: user.email,
+      subject: 'Verify your Yenege Account',
+      html: `
+        <h1>Welcome to Yenege!</h1>
+        <p>Hi ${user.name}, please click the link below to verify your email address and activate your account:</p>
+        <a href="${verificationUrl}" style="display:inline-block;padding:10px 20px;background-color:#4CAF50;color:white;text-decoration:none;border-radius:5px;">Verify Email</a>
+        <p>If you did not request this, please ignore this email.</p>
+      `
     });
 
+    if (!emailSent) {
+      console.error("Failed to send verification email to:", user.email);
+    }
+
+    res.status(201).json({
+      message: "Registration successful. Please check your email to verify your account."
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Verify Email
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    const user = await User.findOne({ emailVerificationToken: token });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired verification token" });
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerificationToken = undefined;
+    await user.save();
+
+    res.json({ message: "Email verified successfully. You can now log in." });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -91,6 +131,10 @@ exports.login = async (req, res) => {
     
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    if (!user.isEmailVerified) {
+      return res.status(401).json({ message: "Please verify your email to login. Check your inbox." });
     }
 
     const token = generateToken(user._id);
