@@ -51,7 +51,14 @@ const userSchema = new mongoose.Schema(
     phone: { type: String },
     address: { type: String },
     city: { type: String },
-    country: { type: String, default: "Ethiopia" }
+    country: { type: String, default: "Ethiopia" },
+    // Email verification
+    isVerified: { type: Boolean, default: false },
+    verificationToken: { type: String },
+    verificationTokenExpires: { type: Date },
+    // Password reset
+    resetPasswordToken: { type: String },
+    resetPasswordExpire: { type: Date }
   },
   { timestamps: true }
 );
