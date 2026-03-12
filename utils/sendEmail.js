@@ -21,7 +21,10 @@ const sendEmail = async (options) => {
     console.log('Message sent: %s', info.messageId);
     return true;
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('Error sending email. Detailed trace:', error);
+    if (error.response) {
+      console.error('SMTP Response:', error.response);
+    }
     return false;
   }
 };
