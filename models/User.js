@@ -24,8 +24,11 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
-    emailVerificationToken: {
+    otp: {
       type: String
+    },
+    otpExpires: {
+      type: Date
     },
     // Seller-specific fields
     sellerProfile: {

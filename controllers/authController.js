@@ -32,13 +32,18 @@ exports.register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
     const userData = {
       name,
       email,
       password: hashedPassword,
       role: role || "buyer",
       isEmailVerified: false,
-      emailVerificationToken: crypto.randomBytes(20).toString('hex')
+      otp,
+      otpExpires
     };
 
     // If registering as seller, include seller profile data
@@ -67,16 +72,19 @@ exports.register = async (req, res) => {
     }
 
     // Send verification email
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email/${user.emailVerificationToken}`;
-    
     const emailSent = await sendEmail({
       email: user.email,
-      subject: 'Verify your Yenege Account',
+      subject: 'Your Yenege Verification Code',
       html: `
-        <h1>Welcome to Yenege!</h1>
-        <p>Hi ${user.name}, please click the link below to verify your email address and activate your account:</p>
-        <a href="${verificationUrl}" style="display:inline-block;padding:10px 20px;background-color:#4CAF50;color:white;text-decoration:none;border-radius:5px;">Verify Email</a>
-        <p>If you did not request this, please ignore this email.</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; text-align: center;">
+          <h1>Welcome to Yenege!</h1>
+          <p>Hi ${user.name}, your verification code is:</p>
+          <div style="margin: 20px auto; padding: 15px; background: #f4f4f4; display: inline-block; font-size: 24px; font-weight: bold; letter-spacing: 5px; border-radius: 8px;">
+            ${otp}
+          </div>
+          <p>This code will expire in 10 minutes.</p>
+          <p>If you did not request this, please ignore this email.</p>
+        </div>
       `
     });
 
@@ -93,22 +101,43 @@ exports.register = async (req, res) => {
   }
 };
 
-// Verify Email
-exports.verifyEmail = async (req, res) => {
+// Verify OTP
+exports.verifyOTP = async (req, res) => {
   try {
-    const { token } = req.params;
+    const { email, otp } = req.body;
 
-    const user = await User.findOne({ emailVerificationToken: token });
+    const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(400).json({ message: "Invalid or expired verification token" });
+      return res.status(404).json({ message: "User not found" });
     }
 
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: "Email is already verified" });
+    }
+
+    if (user.otp !== otp) {
+      return res.status(400).json({ message: "Invalid verification code" });
+    }
+
+    if (user.otpExpires < Date.now()) {
+      return res.status(400).json({ message: "Verification code has expired. Please request a new one." });
+    }
+
+    // OTP is valid
     user.isEmailVerified = true;
-    user.emailVerificationToken = undefined;
+    user.otp = undefined;
+    user.otpExpires = undefined;
     await user.save();
 
-    res.json({ message: "Email verified successfully. You can now log in." });
+    // Automatically log the user in after successful verification
+    const token = generateToken(user._id);
+
+    res.json({ 
+      message: "Account verified successfully",
+      token,
+      user: formatUserResponse(user)
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
