@@ -33,8 +33,19 @@ exports.chat = async (req, res) => {
       return res.status(400).json({ message: 'Message is required' });
     }
 
-    // Use Gemini 3.1 Flash-Lite model
     const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
+    // Strip any leading model messages from history to avoid consecutive model turns.
+    // (The frontend初始greeting is role:'model', which would create two back-to-back
+    //  model messages after our system-prompt reply, causing Gemini to reject the request.)
+    const safeHistory = [];
+    let lastRole = 'model'; // system-prompt reply is already model
+    for (const msg of history) {
+      if (msg.role !== lastRole) {
+        safeHistory.push(msg);
+        lastRole = msg.role;
+      }
+    }
 
     // Start chat with history
     const chat = model.startChat({
@@ -47,7 +58,7 @@ exports.chat = async (req, res) => {
           role: 'model',
           parts: [{ text: 'I understand. I am ready to assist users with Yenege marketplace as a helpful AI assistant.' }],
         },
-        ...history.map(msg => ({
+        ...safeHistory.map(msg => ({
           role: msg.role,
           parts: [{ text: msg.content }],
         })),
