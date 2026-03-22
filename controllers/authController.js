@@ -56,9 +56,13 @@ exports.register = async (req, res) => {
 
     const user = await User.create(userData);
 
-    // Notify admins about new user registration
-    try {
-      const admins = await User.find({ role: 'admin' });
+    // Respond to the client IMMEDIATELY — don't wait for email/notifications
+    res.status(201).json({
+      message: "Registration successful. Please check your email to verify your account."
+    });
+
+    // Notify admins in the background (non-blocking)
+    User.find({ role: 'admin' }).then(admins => {
       const notifications = admins.map(admin => ({
         user: admin._id,
         type: 'new_user',
@@ -66,13 +70,11 @@ exports.register = async (req, res) => {
         message: `${user.name} (${user.email}) has registered as ${user.role}`,
         relatedUser: user._id
       }));
-      await Notification.insertMany(notifications);
-    } catch (notifError) {
-      console.error('Notification error:', notifError);
-    }
+      return Notification.insertMany(notifications);
+    }).catch(err => console.error('[NOTIFY] Admin notification error:', err));
 
-    // Send verification email
-    const emailSent = await sendEmail({
+    // Send verification email in the background (non-blocking)
+    sendEmail({
       email: user.email,
       subject: 'Your Yenege Verification Code',
       html: `
@@ -86,14 +88,8 @@ exports.register = async (req, res) => {
           <p>If you did not request this, please ignore this email.</p>
         </div>
       `
-    });
-
-    if (!emailSent) {
-      console.error("Failed to send verification email to:", user.email);
-    }
-
-    res.status(201).json({
-      message: "Registration successful. Please check your email to verify your account."
+    }).then(sent => {
+      if (!sent) console.error('[EMAIL] Verification email failed for:', user.email);
     });
 
   } catch (error) {

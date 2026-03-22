@@ -1,15 +1,20 @@
 const nodemailer = require('nodemailer');
 
+// Create transporter once and reuse — avoids slow initialization per email
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+  pool: true,           // use connection pooling for faster subsequent emails
+  maxConnections: 5,
+  rateDelta: 1000,
+  rateLimit: 5,
+});
+
 const sendEmail = async (options) => {
   try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
     const message = {
       from: `${process.env.FROM_NAME || 'Yenege'} <${process.env.FROM_EMAIL || process.env.EMAIL_USER}>`,
       to: options.email,
@@ -18,13 +23,11 @@ const sendEmail = async (options) => {
     };
 
     const info = await transporter.sendMail(message);
-    console.log('Message sent: %s', info.messageId);
+    console.log('[EMAIL] Sent successfully to:', options.email, '| MessageId:', info.messageId);
     return true;
   } catch (error) {
-    console.error('Error sending email. Detailed trace:', error);
-    if (error.response) {
-      console.error('SMTP Response:', error.response);
-    }
+    console.error('[EMAIL ERROR] Failed to send email to:', options.email);
+    console.error('[EMAIL ERROR] Code:', error.code, '| Response:', error.response || error.message);
     return false;
   }
 };
