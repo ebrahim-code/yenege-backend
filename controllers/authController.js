@@ -32,18 +32,12 @@ exports.register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Generate a 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
     const userData = {
       name,
       email,
       password: hashedPassword,
       role: role || "buyer",
-      isEmailVerified: false,
-      otp,
-      otpExpires
+      isEmailVerified: true // Auto-verify without email for demo
     };
 
     // If registering as seller, include seller profile data
@@ -55,10 +49,15 @@ exports.register = async (req, res) => {
     }
 
     const user = await User.create(userData);
+    
+    // Generate auth token immediately
+    const token = generateToken(user._id);
 
-    // Respond to the client IMMEDIATELY — don't wait for email/notifications
+    // Respond instantly with token (bypassing OTP)
     res.status(201).json({
-      message: "Registration successful. Please check your email to verify your account."
+      message: "Registration successful.",
+      token,
+      user: formatUserResponse(user)
     });
 
     // Notify admins in the background (non-blocking)
@@ -72,25 +71,8 @@ exports.register = async (req, res) => {
       }));
       return Notification.insertMany(notifications);
     }).catch(err => console.error('[NOTIFY] Admin notification error:', err));
-
-    // Send verification email in the background (non-blocking)
-    sendEmail({
-      email: user.email,
-      subject: 'Your Yenege Verification Code',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; text-align: center;">
-          <h1>Welcome to Yenege!</h1>
-          <p>Hi ${user.name}, your verification code is:</p>
-          <div style="margin: 20px auto; padding: 15px; background: #f4f4f4; display: inline-block; font-size: 24px; font-weight: bold; letter-spacing: 5px; border-radius: 8px;">
-            ${otp}
-          </div>
-          <p>This code will expire in 10 minutes.</p>
-          <p>If you did not request this, please ignore this email.</p>
-        </div>
-      `
-    }).then(sent => {
-      if (!sent) console.error('[EMAIL] Verification email failed for:', user.email);
-    });
+    
+    // Email sending is completely bypassed now.
 
   } catch (error) {
     res.status(500).json({ message: error.message });
