@@ -1,7 +1,6 @@
 const nodemailer = require('nodemailer');
 
 const sendEmail = async (options) => {
-  // Check env vars each time — safer than module-level transporter
   const emailUser = process.env.EMAIL_USER;
   const emailPass = process.env.EMAIL_PASS;
 
@@ -11,9 +10,13 @@ const sendEmail = async (options) => {
   }
 
   try {
-    // Create transporter inside function so it always uses current env values
+    // Use explicit host + port + family:4 to force IPv4
+    // Render free tier cannot connect to Gmail over IPv6 (ENETUNREACH)
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // use STARTTLS
+      family: 4,     // force IPv4 — fixes ENETUNREACH on Render
       auth: {
         user: emailUser,
         pass: emailPass,
