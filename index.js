@@ -82,4 +82,10 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 API available at http://localhost:${PORT}/api`);
-});
+  // Warn if email is not configured
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.error('⚠️  WARNING: EMAIL_USER or EMAIL_PASS environment variables are NOT SET. Email verification will not work!');
+  } else {
+    console.log(`📧 Email configured for: ${process.env.EMAIL_USER}`);
+  }
+});

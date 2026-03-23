@@ -1,22 +1,27 @@
 const nodemailer = require('nodemailer');
 
-// Create transporter once and reuse — avoids slow initialization per email
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  pool: true,           // use connection pooling for faster subsequent emails
-  maxConnections: 5,
-  rateDelta: 1000,
-  rateLimit: 5,
-});
-
 const sendEmail = async (options) => {
+  // Check env vars each time — safer than module-level transporter
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
+
+  if (!emailUser || !emailPass) {
+    console.error('[EMAIL ERROR] EMAIL_USER or EMAIL_PASS environment variable is not set!');
+    return false;
+  }
+
   try {
+    // Create transporter inside function so it always uses current env values
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: emailUser,
+        pass: emailPass,
+      },
+    });
+
     const message = {
-      from: `${process.env.FROM_NAME || 'Yenege'} <${process.env.FROM_EMAIL || process.env.EMAIL_USER}>`,
+      from: `${process.env.FROM_NAME || 'Yenege'} <${emailUser}>`,
       to: options.email,
       subject: options.subject,
       html: options.html,
