@@ -124,29 +124,45 @@ const getSellerProducts = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const { title, description, price, originalPrice, category } = req.body;
-    const product = await Product.findOneAndUpdate({
+    
+    // Fetch the original product to use its base info
+    const originalProduct = await Product.findOne({
       _id: req.params.id,
       user: req.user._id
-    }, {
-      $set: {
-        title: title || product.title,
-        description: description || product.description,
-        price: price || product.price,
-        originalPrice: originalPrice !== undefined ? originalPrice : product.originalPrice,
-        category: category || product.category
-      }
-    }, { new: true });
+    });
 
-    if (!product) {
+    if (!originalProduct) {
       return res.status(404).json({ message: "Product not found or unauthorized" });
     }
 
-    if (req.file) {
-      product.image = req.file.path;  // Cloudinary URL
-    }
+    // Create a new product with the updated fields
+    const newProduct = new Product({
+      title: title || originalProduct.title,
+      description: description || originalProduct.description,
+      price: price || originalProduct.price,
+      originalPrice: originalPrice !== undefined ? originalPrice : originalProduct.originalPrice,
+      category: category || originalProduct.category,
+      
+      // Preserve other fields from original product
+      condition: originalProduct.condition,
+      stock: originalProduct.stock,
+      status: originalProduct.status,
+      tags: originalProduct.tags,
+      images: originalProduct.images,
+      
+      // Use new image if uploaded, otherwise use original
+      image: req.file ? req.file.path : originalProduct.image,
+      user: req.user._id,
+    });
 
-    const updatedProduct = await product.save();
-    res.json(updatedProduct);
+    const savedProduct = await newProduct.save();
+
+    // Increment seller's total products since we created a new one
+    await User.findByIdAndUpdate(req.user._id, {
+      $inc: { "stats.totalProducts": 1 }
+    });
+
+    res.json(savedProduct);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
