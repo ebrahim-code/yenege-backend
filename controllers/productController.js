@@ -125,42 +125,38 @@ const updateProduct = async (req, res) => {
   try {
     const { title, description, price, originalPrice, category } = req.body;
     
-    // Fetch the original product to use its base info
-    const originalProduct = await Product.findOne({
+    // Fetch the existing product
+    const product = await Product.findOne({
       _id: req.params.id,
       user: req.user._id
     });
 
-    if (!originalProduct) {
+    if (!product) {
       return res.status(404).json({ message: "Product not found or unauthorized" });
     }
 
-    // Create a new product with the updated fields
-    const newProduct = new Product({
-      title: title || originalProduct.title,
-      description: description || originalProduct.description,
-      price: price || originalProduct.price,
-      originalPrice: originalPrice !== undefined ? originalPrice : originalProduct.originalPrice,
-      category: category || originalProduct.category,
-      
-      // Preserve other fields from original product
-      condition: originalProduct.condition,
-      stock: originalProduct.stock,
-      status: originalProduct.status,
-      tags: originalProduct.tags,
-      images: originalProduct.images,
-      
-      // Use new image if uploaded, otherwise use original
-      image: req.file ? req.file.path : originalProduct.image,
-      user: req.user._id,
-    });
+    // Auto-track previous price if price changed AND seller didn't explicitly set originalPrice
+    let pendingOriginalPrice = product.originalPrice;
+    if (price && Number(price) !== product.price) {
+      pendingOriginalPrice = product.price; // the old price becomes the originalPrice
+    }
+    // But if originalPrice is explicitly sent in req.body, trust it
+    if (originalPrice !== undefined) {
+      pendingOriginalPrice = originalPrice;
+    }
 
-    const savedProduct = await newProduct.save();
+    // Update in-place
+    product.title = title || product.title;
+    product.description = description || product.description;
+    product.price = price || product.price;
+    product.originalPrice = pendingOriginalPrice;
+    product.category = category || product.category;
+    
+    if (req.file) {
+      product.image = req.file.path; // New uploaded image
+    }
 
-    // Increment seller's total products since we created a new one
-    await User.findByIdAndUpdate(req.user._id, {
-      $inc: { "stats.totalProducts": 1 }
-    });
+    const savedProduct = await product.save();
 
     res.json(savedProduct);
   } catch (error) {
