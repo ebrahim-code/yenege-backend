@@ -207,8 +207,16 @@ const toggleFeatured = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    product.isFeatured = !product.isFeatured;
-    const updatedProduct = await product.save();
+    const newFeaturedStatus = !product.isFeatured;
+    
+    // Use findByIdAndUpdate to avoid full document validation, 
+    // ensuring we can toggle featured even if legacy fields (like category) are messy.
+    const updatedProduct = await Product.findByIdAndUpdate(
+      req.params.id,
+      { isFeatured: newFeaturedStatus },
+      { new: true, runValidators: false }
+    );
+    
     res.json(updatedProduct);
   } catch (error) {
     res.status(500).json({ message: error.message });
