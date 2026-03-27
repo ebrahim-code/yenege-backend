@@ -33,7 +33,17 @@ const productSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
-      enum: ["Textiles", "Baskets", "Coffee", "Jewelry", "Pottery", "Clothing", "Leather", "Art", "Shoes", "Other"],
+      enum: [
+        // Ethiopian Traditional
+        "Textiles", "Baskets", "Coffee", "Jewelry", "Pottery", "Clothing", "Leather", "Art",
+        // Broad Modern
+        "Electronics", "Technology", "Books", "Food & Drinks", "Health & Beauty",
+        "Sports & Outdoors", "Toys & Games", "Home & Garden", "Automotive",
+        "Music & Instruments", "Movies & Entertainment", "Baby & Kids",
+        "Office Supplies", "Pet Supplies", "Tools & Hardware",
+        // General
+        "Shoes", "Accessories", "Other"
+      ],
     },
 
     condition: {
