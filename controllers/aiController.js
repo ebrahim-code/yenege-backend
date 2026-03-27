@@ -27,19 +27,20 @@ Always be helpful, friendly, and culturally respectful. If you don't know someth
 // @access  Public
 exports.chat = async (req, res) => {
   try {
-    const { message, history = [] } = req.body;
+    const { message, history = [], language = 'en' } = req.body;
 
     if (!message) {
       return res.status(400).json({ message: 'Message is required' });
     }
 
+    const langInstruction = language === 'am'
+      ? '\n\nIMPORTANT: The user has selected Amharic (አማርኛ) as their language. You MUST respond entirely in Amharic script. Do not use English in your response unless quoting a product name that has no Amharic equivalent.'
+      : '\n\nRespond in English.';
+
     const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
-    // Strip any leading model messages from history to avoid consecutive model turns.
-    // (The frontend初始greeting is role:'model', which would create two back-to-back
-    //  model messages after our system-prompt reply, causing Gemini to reject the request.)
     const safeHistory = [];
-    let lastRole = 'model'; // system-prompt reply is already model
+    let lastRole = 'model';
     for (const msg of history) {
       if (msg.role !== lastRole) {
         safeHistory.push(msg);
@@ -47,16 +48,15 @@ exports.chat = async (req, res) => {
       }
     }
 
-    // Start chat with history
     const chat = model.startChat({
       history: [
         {
           role: 'user',
-          parts: [{ text: SYSTEM_PROMPT }],
+          parts: [{ text: SYSTEM_PROMPT + langInstruction }],
         },
         {
           role: 'model',
-          parts: [{ text: 'I understand. I am ready to assist users with Yenege marketplace as a helpful AI assistant.' }],
+          parts: [{ text: language === 'am' ? 'ገባኝ። ሁሉም ምላሾቼ በአማርኛ ይሆናሉ።' : 'I understand. I am ready to assist users with Yenege marketplace as a helpful AI assistant.' }],
         },
         ...safeHistory.map(msg => ({
           role: msg.role,
@@ -65,7 +65,6 @@ exports.chat = async (req, res) => {
       ],
     });
 
-    // Send message and get response
     const result = await chat.sendMessage(message);
     const response = await result.response;
     const text = response.text();
@@ -85,15 +84,19 @@ exports.chat = async (req, res) => {
   }
 };
 
+
 // @desc    Get product recommendations
 // @route   POST /api/ai/recommendations
 // @access  Public
 exports.getRecommendations = async (req, res) => {
   try {
-   const { preferences, occasion, budget } = req.body;
+    const { preferences, occasion, budget, language = 'en' } = req.body;
 
-    // Use Gemini 3.1 Flash-Lite model
     const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
+    const langNote = language === 'am'
+      ? '\n\nIMPORTANT: Respond entirely in Amharic (አማርኛ) script.'
+      : '';
 
     const prompt = `As a Yenege marketplace assistant, recommend Ethiopian artisan products based on:
 - Preferences: ${preferences || 'Not specified'}
@@ -102,7 +105,7 @@ exports.getRecommendations = async (req, res) => {
 
 Available categories: Textiles & Shawls, Baskets & Home Decor, Coffee Ceremony items, Jewelry, Pottery & Ceramics, Traditional Clothing, Leather Goods, Paintings & Art.
 
-Provide 3-5 specific product recommendations with brief explanations of why they match the request. Include cultural significance where relevant.`;
+Provide 3-5 specific product recommendations with brief explanations of why they match the request. Include cultural significance where relevant.${langNote}`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -128,10 +131,13 @@ Provide 3-5 specific product recommendations with brief explanations of why they
 // @access  Private
 exports.sellerAssist = async (req, res) => {
   try {
-  const { question, productInfo } = req.body;
+    const { question, productInfo, language = 'en' } = req.body;
 
-    // Use Gemini 3.1 Flash-Lite model
     const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
+    const langNote = language === 'am'
+      ? '\n\nIMPORTANT: Respond entirely in Amharic (አማርኛ) script.'
+      : '';
 
     const prompt = `As a Yenege marketplace seller assistant, help with the following:
 
@@ -145,7 +151,7 @@ Provide helpful, actionable advice for Ethiopian artisans selling on Yenege. Con
 - Photography tips
 - Customer engagement
 
-Be encouraging and supportive of traditional craftsmanship.`;
+Be encouraging and supportive of traditional craftsmanship.${langNote}`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
