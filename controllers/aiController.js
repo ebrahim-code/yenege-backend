@@ -3,7 +3,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const MODEL_NAME = 'gemini-1.5-flash';
+const MODEL_NAME = 'gemini-3.1-flash-lite-preview';
 
 const SYSTEM_PROMPT = `You are an AI assistant for Yenege, an Ethiopian artisan marketplace that empowers women and preserves cultural heritage.
 
@@ -75,10 +75,19 @@ exports.chat = async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('AI Chat Error:', error);
-    res.status(500).json({
+    console.error('AI Chat Error:', error.message);
+    
+    // Check if error is due to Rate Limiting (429) or Service Unavailable (503)
+    const isRateLimit = error.message.includes('429');
+    const isOverloaded = error.message.includes('503');
+    
+    res.status(isRateLimit ? 429 : isOverloaded ? 503 : 500).json({
       success: false,
-      message: 'Sorry, I encountered an error. Please try again later.',
+      message: isRateLimit 
+        ? 'Too many requests. Please wait a moment.' 
+        : isOverloaded 
+          ? 'The AI is currently overloaded with requests. Please try again soon.'
+          : 'Sorry, I encountered an error. Please try again later.',
       error: error.message,
     });
   }
@@ -117,10 +126,18 @@ Provide 3-5 specific product recommendations with brief explanations of why they
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('AI Recommendations Error:', error);
-    res.status(500).json({
+    console.error('AI Recommendations Error:', error.message);
+
+    const isRateLimit = error.message.includes('429');
+    const isOverloaded = error.message.includes('503');
+
+    res.status(isRateLimit ? 429 : isOverloaded ? 503 : 500).json({
       success: false,
-      message: 'Sorry, I could not generate recommendations at this time.',
+      message: isRateLimit 
+        ? 'Too many requests. Please wait a moment.' 
+        : isOverloaded 
+          ? 'The AI is currently overloaded with requests. Please try again soon.'
+          : 'Sorry, I could not generate recommendations at this time.',
       error: error.message,
     });
   }
@@ -163,10 +180,18 @@ Be encouraging and supportive of traditional craftsmanship.${langNote}`;
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('AI Seller Assist Error:', error);
-    res.status(500).json({
+    console.error('AI Seller Assist Error:', error.message);
+
+    const isRateLimit = error.message.includes('429');
+    const isOverloaded = error.message.includes('503');
+
+    res.status(isRateLimit ? 429 : isOverloaded ? 503 : 500).json({
       success: false,
-      message: 'Sorry, I could not assist at this time.',
+      message: isRateLimit 
+        ? 'Too many requests. Please wait a moment.' 
+        : isOverloaded 
+          ? 'The AI is currently overloaded with requests. Please try again soon.'
+          : 'Sorry, I could not assist at this time.',
       error: error.message,
     });
   }
