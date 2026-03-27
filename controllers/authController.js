@@ -18,6 +18,7 @@ const formatUserResponse = (user) => ({
   role: user.role,
   sellerProfile: user.sellerProfile,
   stats: user.stats,
+  preferredCategories: user.preferredCategories || [],
   createdAt: user.createdAt
 });
 
@@ -223,6 +224,72 @@ exports.becomeSeller = async (req, res) => {
     res.json({
       message: "You are now a seller!",
       user: formatUserResponse(user)
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Update user category preferences
+exports.updatePreferences = async (req, res) => {
+  try {
+    const { preferredCategories } = req.body;
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (preferredCategories) {
+      user.preferredCategories = preferredCategories;
+    }
+
+    await user.save();
+
+    res.json({
+      message: "Preferences updated successfully",
+      user: formatUserResponse(user)
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Track viewed category
+exports.trackViewedCategory = async (req, res) => {
+  try {
+    const { category } = req.body;
+
+    if (!category) {
+      return res.status(400).json({ message: "Category is required" });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Find if category already exists in viewedCategories
+    const viewedCategory = user.viewedCategories.find(vc => vc.category === category);
+
+    if (viewedCategory) {
+      // Update existing category
+      viewedCategory.count += 1;
+      viewedCategory.lastViewed = new Date();
+    } else {
+      // Add new category
+      user.viewedCategories.push({
+        category,
+        count: 1,
+        lastViewed: new Date()
+      });
+    }
+
+    await user.save();
+
+    res.json({
+      message: "Category view tracked",
+      viewedCategories: user.viewedCategories
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

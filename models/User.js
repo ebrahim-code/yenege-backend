@@ -61,7 +61,17 @@ const userSchema = new mongoose.Schema(
     phone: { type: String },
     address: { type: String },
     city: { type: String },
-    country: { type: String, default: "Ethiopia" }
+    country: { type: String, default: "Ethiopia" },
+    // User preferences for personalized recommendations
+    preferredCategories: [{
+      type: String,
+      enum: ["Textiles", "Baskets", "Coffee", "Jewelry", "Pottery", "Clothing", "Leather", "Art"]
+    }],
+    viewedCategories: [{
+      category: { type: String },
+      count: { type: Number, default: 1 },
+      lastViewed: { type: Date, default: Date.now }
+    }]
   },
   { timestamps: true }
 );
