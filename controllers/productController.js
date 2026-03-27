@@ -5,7 +5,7 @@ const Notification = require("../models/Notification");
 // CREATE PRODUCT
 const createProduct = async (req, res) => {
   try {
-    const { title, description, price, category } = req.body;
+    const { title, description, price, originalPrice, category } = req.body;
 
     if (!req.file) {
       return res.status(400).json({ message: "Image is required" });
@@ -15,6 +15,7 @@ const createProduct = async (req, res) => {
       title,
       description,
       price,
+      originalPrice,
       category,
       image: req.file.path,  // Cloudinary URL
       user: req.user._id,
@@ -122,20 +123,23 @@ const getSellerProducts = async (req, res) => {
 // UPDATE PRODUCT
 const updateProduct = async (req, res) => {
   try {
-    const { title, description, price, category } = req.body;
-    const product = await Product.findOne({
+    const { title, description, price, originalPrice, category } = req.body;
+    const product = await Product.findOneAndUpdate({
       _id: req.params.id,
       user: req.user._id
-    });
+    }, {
+      $set: {
+        title: title || product.title,
+        description: description || product.description,
+        price: price || product.price,
+        originalPrice: originalPrice !== undefined ? originalPrice : product.originalPrice,
+        category: category || product.category
+      }
+    }, { new: true });
 
     if (!product) {
       return res.status(404).json({ message: "Product not found or unauthorized" });
     }
-
-    product.title = title || product.title;
-    product.description = description || product.description;
-    product.price = price || product.price;
-    product.category = category || product.category;
 
     if (req.file) {
       product.image = req.file.path;  // Cloudinary URL
