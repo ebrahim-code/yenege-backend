@@ -173,15 +173,37 @@ exports.getMe = async (req, res) => {
 // Update user profile
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, sellerProfile } = req.body;
+    const { name, phone, address, city } = req.body;
+    let { sellerProfile } = req.body;
     const updateData = {};
 
     if (name) updateData.name = name;
-    if (sellerProfile) updateData.sellerProfile = sellerProfile;
+    if (phone) updateData.phone = phone;
+    if (address) updateData.address = address;
+    if (city) updateData.city = city;
+
+    // If it comes from FormData, it might be a string
+    if (typeof sellerProfile === 'string') {
+      try {
+        sellerProfile = JSON.parse(sellerProfile);
+      } catch (e) {
+        console.error("Error parsing sellerProfile", e);
+      }
+    }
+
+    if (sellerProfile) {
+      updateData.sellerProfile = sellerProfile;
+    }
+
+    if (req.file) {
+      const bannerUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+      if (!updateData.sellerProfile) updateData.sellerProfile = {};
+      updateData.sellerProfile.bannerImage = bannerUrl;
+    }
 
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      updateData,
+      { $set: updateData },
       { new: true, runValidators: true }
     );
 

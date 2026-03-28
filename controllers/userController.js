@@ -134,3 +134,19 @@ exports.deleteUser = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// @desc    Get public user profile for seller store
+// @route   GET /api/users/:id
+// @access  Public
+exports.getPublicProfile = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id)
+            .select("-password -email -otp -otpExpires");
+        
+        if (!user) return res.status(404).json({ message: "Seller not found" });
+        
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};

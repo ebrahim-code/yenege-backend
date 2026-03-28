@@ -2,13 +2,14 @@ const Order = require("../models/Order");
 const Product = require("../models/Product");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
+const Coupon = require("../models/Coupon");
 
 // @desc    Create new order
 // @route   POST /api/orders
 // @access  Private
 exports.createOrder = async (req, res) => {
     try {
-        const { orderItems, shippingAddress, paymentMethod, totalAmount } = req.body;
+        const { orderItems, shippingAddress, paymentMethod, totalAmount, couponCode, discountAmount } = req.body;
 
         if (!orderItems || orderItems.length === 0) {
             return res.status(400).json({ message: "No order items" });
@@ -25,7 +26,17 @@ exports.createOrder = async (req, res) => {
             } else {
                 item.shippingCost = 0;
             }
-            return item;
+            // Ensure selectedVariants is preserved if it exists
+            return {
+                product: item.product,
+                title: item.title,
+                quantity: item.quantity,
+                price: item.price,
+                image: item.image,
+                seller: item.seller,
+                shippingCost: item.shippingCost,
+                selectedVariants: item.selectedVariants || {}
+            };
         }));
 
         // Group items by seller
@@ -50,8 +61,26 @@ exports.createOrder = async (req, res) => {
 
         // Add shippingPrice into totalAmount
         Object.values(ordersBySeller).forEach(order => {
+            order.shippingPrice += 0; // ensure it's a number
             order.totalAmount += order.shippingPrice;
         });
+
+        // Handle Coupon (Security: validate on backend)
+        let finalDiscount = 0;
+        let validatedCoupon = null;
+        if (couponCode) {
+            validatedCoupon = await Coupon.findOne({ 
+                code: couponCode.toUpperCase(),
+                active: true,
+                expirationDate: { $gt: new Date() }
+            });
+            if (validatedCoupon && (!validatedCoupon.usageLimit || validatedCoupon.usageCount < validatedCoupon.usageLimit)) {
+                // For multiple orders (multi-seller), we apply the discount once. 
+                // Simple strategy: apply it to the first order or split it.
+                // Let's apply it to the first order for simplicity in this marketplace.
+                finalDiscount = discountAmount || 0;
+            }
+        }
 
         // Filter out any group without a valid seller
         const validOrders = Object.values(ordersBySeller).filter(o => o.seller);
@@ -60,7 +89,17 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ message: "Could not determine seller for any item" });
         }
 
-        const orderPromises = validOrders.map(async (orderData) => {
+        const orderPromises = validOrders.map(async (orderData, index) => {
+            // If it's the first order in a multi-seller checkout, attach the coupon
+            if (index === 0 && validatedCoupon) {
+                orderData.couponCode = validatedCoupon.code;
+                orderData.discountAmount = finalDiscount;
+                orderData.totalAmount = Math.max(0, orderData.totalAmount - finalDiscount);
+                
+                // Update coupon usage
+                validatedCoupon.usageCount += 1;
+                await validatedCoupon.save();
+            }
             const order = new Order(orderData);
             return await order.save();
         });

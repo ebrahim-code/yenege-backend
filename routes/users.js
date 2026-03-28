@@ -6,7 +6,8 @@ const {
     toggleWishlist,
     getUsers,
     updateUserRole,
-    deleteUser
+    deleteUser,
+    getPublicProfile
 } = require("../controllers/userController");
 const protect = require("../middleware/auth");
 
@@ -17,6 +18,8 @@ router.route("/wishlist").post(protect, toggleWishlist);
 // Admin routes
 router.route("/").get(protect, getUsers);
 router.route("/:id/role").put(protect, updateUserRole);
-router.route("/:id").delete(protect, deleteUser);
+router.route("/:id")
+    .get(getPublicProfile)
+    .delete(protect, deleteUser);
 
 module.exports = router;

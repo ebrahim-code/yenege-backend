@@ -99,7 +99,12 @@ const productSchema = new mongoose.Schema(
     isFeatured: {
       type: Boolean,
       default: false
-    }
+    },
+
+    variants: [{
+      name: { type: String, required: true },
+      options: [{ type: String, required: true }]
+    }]
   },
   { timestamps: true }
 );

@@ -38,6 +38,7 @@ app.use("/api/reviews", require("./routes/reviews"));
 app.use("/api/notifications", require("./routes/notifications"));
 app.use("/api/ai", require("./routes/ai"));
 app.use("/api/contact", require("./routes/contact"));
+app.use("/api/coupons", require("./routes/coupons"));
 
 // Socket.io real-time messaging
 io.on("connection", (socket) => {

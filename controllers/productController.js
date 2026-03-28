@@ -11,6 +11,11 @@ const createProduct = async (req, res) => {
       return res.status(400).json({ message: "Image is required" });
     }
 
+    let parsedVariants = [];
+    if (req.body.variants) {
+       try { parsedVariants = JSON.parse(req.body.variants); } catch (e) { console.warn('Variant parse error', e); }
+    }
+
     const product = new Product({
       title,
       description,
@@ -19,6 +24,7 @@ const createProduct = async (req, res) => {
       category,
       image: req.file.path,  // Cloudinary URL
       user: req.user._id,
+      variants: parsedVariants
     });
 
     const savedProduct = await product.save();
@@ -152,6 +158,10 @@ const updateProduct = async (req, res) => {
     product.originalPrice = pendingOriginalPrice;
     product.category = category || product.category;
     
+    if (req.body.variants) {
+       try { product.variants = JSON.parse(req.body.variants); } catch (e) { console.warn('Variant parse error', e); }
+    }
+
     if (req.file) {
       product.image = req.file.path; // New uploaded image
     }

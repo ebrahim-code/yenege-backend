@@ -23,6 +23,7 @@ const orderSchema = new mongoose.Schema(
                 quantity: { type: Number, required: true, min: 1 },
                 price: { type: Number, required: true },
                 image: { type: String },
+                selectedVariants: { type: Object, default: {} },
             },
         ],
         shippingAddress: {
@@ -64,6 +65,14 @@ const orderSchema = new mongoose.Schema(
         deliveredAt: {
             type: Date,
         },
+        couponCode: {
+            type: String,
+            default: null
+        },
+        discountAmount: {
+            type: Number,
+            default: 0
+        }
     },
     { timestamps: true }
 );

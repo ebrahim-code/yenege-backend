@@ -40,7 +40,8 @@ const userSchema = new mongoose.Schema(
       country: { type: String, default: "Ethiopia" },
       verified: { type: Boolean, default: false },
       avatar: { type: String },
-      bannerImage: { type: String }
+      bannerImage: { type: String },
+      shopPolicies: { type: String }
     },
     stats: {
       totalProducts: { type: Number, default: 0 },
