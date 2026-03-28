@@ -14,13 +14,16 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ message: "No order items" });
         }
 
-        // Resolve missing sellers by looking up the product
+        // Resolve missing sellers and get shipping cost by looking up the product
         const resolvedItems = await Promise.all(orderItems.map(async (item) => {
-            if (!item.seller) {
-                const product = await Product.findById(item.product);
-                if (product) {
+            const product = await Product.findById(item.product);
+            if (product) {
+                if (!item.seller) {
                     item.seller = product.user;
                 }
+                item.shippingCost = product.shippingCost || 0;
+            } else {
+                item.shippingCost = 0;
             }
             return item;
         }));
@@ -36,11 +39,18 @@ exports.createOrder = async (req, res) => {
                     items: [],
                     shippingAddress,
                     paymentMethod,
-                    totalAmount: 0
+                    totalAmount: 0,
+                    shippingPrice: 0
                 };
             }
             ordersBySeller[sellerId].items.push(item);
-            ordersBySeller[sellerId].totalAmount += item.price * item.quantity;
+            ordersBySeller[sellerId].totalAmount += (item.price * item.quantity);
+            ordersBySeller[sellerId].shippingPrice += item.shippingCost;
+        });
+
+        // Add shippingPrice into totalAmount
+        Object.values(ordersBySeller).forEach(order => {
+            order.totalAmount += order.shippingPrice;
         });
 
         // Filter out any group without a valid seller

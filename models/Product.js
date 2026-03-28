@@ -21,6 +21,11 @@ const productSchema = new mongoose.Schema(
       type: Number,
     },
 
+    shippingCost: {
+      type: Number,
+      default: 0,
+    },
+
     image: {
       type: String,
       required: true,

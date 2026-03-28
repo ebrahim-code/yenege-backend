@@ -8,7 +8,8 @@ const {
   getSellerProducts,
   updateProduct,
   deleteProduct,
-  toggleFeatured
+  toggleFeatured,
+  updateShippingCost
 } = require("../controllers/productController");
 
 const protect = require("../middleware/auth");
@@ -24,5 +25,8 @@ router.post("/", protect, upload.single("image"), createProduct);
 router.put("/:id", protect, upload.single("image"), updateProduct);
 router.delete("/:id", protect, deleteProduct);
 router.put("/:id/feature", protect, toggleFeatured);
+
+// Protected admin routes
+router.patch("/:id/shipping", protect, updateShippingCost);
 
 module.exports = router;

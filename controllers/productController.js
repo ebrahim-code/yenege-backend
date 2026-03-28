@@ -223,6 +223,29 @@ const toggleFeatured = async (req, res) => {
   }
 };
 
+// UPDATE SHIPPING COST (Admin Only)
+const updateShippingCost = async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized as admin" });
+    }
+
+    const { shippingCost } = req.body;
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    product.shippingCost = Number(shippingCost) || 0;
+    const updatedProduct = await product.save();
+    
+    res.json(updatedProduct);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createProduct,
   getProducts,
@@ -230,5 +253,6 @@ module.exports = {
   getSellerProducts,
   updateProduct,
   deleteProduct,
-  toggleFeatured
+  toggleFeatured,
+  updateShippingCost
 };
