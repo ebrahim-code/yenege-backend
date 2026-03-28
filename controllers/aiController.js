@@ -3,7 +3,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const MODEL_NAME = 'gemini-1.5-flash';
+const MODEL_NAME = 'gemini-3.1-flash-lite-preview';
 
 const SYSTEM_PROMPT = `You are an AI assistant for Yenege, an Ethiopian artisan marketplace that empowers women and preserves cultural heritage.
 
