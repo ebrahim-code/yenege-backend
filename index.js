@@ -15,13 +15,18 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: ['https://yenege-tesfa.netlify.app', 'https://yenege.netlify.app', 'http://localhost:5173', 'http://localhost:5174'],
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   }
 });
 
+// CORS Configuration - Allow frontend access
 app.use(cors({
   origin: ['https://yenege-tesfa.netlify.app', 'https://yenege.netlify.app', 'http://localhost:5173', 'http://localhost:5174'],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
@@ -89,4 +94,4 @@ server.listen(PORT, () => {
   } else {
     console.log(`📧 Email configured for: ${process.env.EMAIL_USER}`);
   }
-});
+});
