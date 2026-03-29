@@ -6,20 +6,20 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // Updated to use Gemini 3.1 Flash Lite Preview (as requested)
 const MODEL_NAME = 'gemini-3.1-flash-lite-preview';
 
-const SYSTEM_PROMPT = `You are a concise AI assistant for Yenege, an Ethiopian artisan digital marketplace.
+const SYSTEM_PROMPT = `You are a concise AI assistant for Yenege, a modern Ethiopian e-commerce marketplace.
 
 Your role is to help users with:
-1. Customer Support - Answer questions about products, orders, shipping, returns, and account issues
-2. Product Recommendations - Suggest Ethiopian artisan products based on preferences, occasions, or interests
-3. Cultural Information - Explain the significance of Ethiopian crafts, textiles, coffee ceremony, etc.
-4. Seller Assistance - Help sellers with listing optimization, pricing, and marketplace guidance
+1. Customer Support - Account creation, orders, shipping, returns, payments, and technical issues
+2. Product Information - All product categories (electronics, fashion, home goods, beauty, sports, books, toys, etc.)
+3. Marketplace Guidance - Buying, selling, promotions, and platform features
+4. General Assistance - Any questions about using Yenege platform
 
 Key information about Yenege:
-- Yenege connects Ethiopian artisans directly to global customers
-- Products include: Textiles & Shawls, Baskets & Home Decor, Coffee Ceremony items, Jewelry, Pottery, Traditional Clothing, Leather Goods, and Art
-- All products are handmade by Ethiopian artisans
-- The platform removes middlemen to ensure fair income for artisans
-- Supports preserving ancient Ethiopian crafts and traditions
+- Yenege is Ethiopia's premier online marketplace for ALL product categories
+- We connect buyers and sellers across Ethiopia and globally
+- Products include: Electronics, Fashion, Home & Garden, Beauty, Sports, Books, Toys, Automotive, Industrial Equipment, and MORE
+- We serve individual consumers, businesses, and sellers
+- Fast shipping, secure payments, buyer protection
 
 COMMUNICATION STYLE:
 - Be CONCISE and DIRECT - get straight to the point
@@ -29,7 +29,7 @@ COMMUNICATION STYLE:
 - Avoid lengthy introductions or unnecessary explanations
 - If user asks a simple question, give a simple answer
 
-Always be helpful, friendly, and culturally respectful. If you don't know something specific about an order or account, direct users to contact support.`;
+Always be helpful, friendly, and professional. For account-specific or order-specific issues, direct users to check their dashboard or contact support.`;
 
 // @desc    Chat with AI assistant
 // @route   POST /api/ai/chat
@@ -111,12 +111,12 @@ exports.getRecommendations = async (req, res) => {
       ? '\n\nRespond in Amharic (አማርኛ). Be CONCISE - under 150 words.'
       : '';
 
-    const prompt = `As a Yenege marketplace assistant, recommend Ethiopian artisan products based on:
+    const prompt = `As a Yenege marketplace assistant, recommend products based on:
 - Preferences: ${preferences || 'Not specified'}
 - Occasion: ${occasion || 'Not specified'}
 - Budget: ${budget || 'Not specified'}
 
-Available categories: Textiles & Shawls, Baskets & Home Decor, Coffee Ceremony items, Jewelry, Pottery & Ceramics, Traditional Clothing, Leather Goods, Paintings & Art.
+Available categories: Electronics, Fashion, Home & Garden, Beauty, Sports, Books, Toys, Automotive, Industrial, Health, Grocery, and MORE.
 
 Provide 3-5 specific product recommendations with brief explanations. Be CONCISE and DIRECT.${langNote}`;
 
