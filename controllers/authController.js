@@ -57,7 +57,10 @@ exports.register = async (req, res) => {
 
     const user = await User.create(userData);
     
-    // Send verification email
+    // Send verification email IMMEDIATELY (before response)
+    console.log('[REGISTER] Sending verification email to:', user.email);
+    console.log('[REGISTER] Generated OTP:', otp);
+    
     const verificationEmail = `
       <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
         <div style="background: linear-gradient(135deg, #16a34a 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 10px;">
@@ -90,15 +93,21 @@ exports.register = async (req, res) => {
       </div>
     `;
 
-    const emailSent = await sendEmail({
-      email: user.email,
-      subject: 'Verify Your Email - Yenege Marketplace',
-      html: verificationEmail
-    });
+    try {
+      const emailSent = await sendEmail({
+        email: user.email,
+        subject: 'Verify Your Email - Yenege Marketplace',
+        html: verificationEmail
+      });
 
-    if (!emailSent) {
-      console.error('[REGISTER] Failed to send verification email to:', user.email);
-      // Don't fail registration, but log the error
+      if (emailSent) {
+        console.log('[REGISTER] ✅ Verification email sent successfully to:', user.email);
+      } else {
+        console.error('[REGISTER] ❌ Failed to send verification email to:', user.email);
+      }
+    } catch (emailError) {
+      console.error('[REGISTER] ❌ Email sending error:', emailError.message);
+      console.error('[REGISTER] Full error:', emailError);
     }
 
     // Generate auth token
