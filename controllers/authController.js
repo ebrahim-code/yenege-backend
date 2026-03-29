@@ -33,18 +33,12 @@ exports.register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = Date.now() + 3600000; // 1 hour
-
     const userData = {
       name,
       email,
       password: hashedPassword,
       role: role || "buyer",
-      isEmailVerified: false,
-      otp,
-      otpExpires
+      isEmailVerified: true // Auto-verify without email for demo
     };
 
     // If registering as seller, include seller profile data
@@ -57,68 +51,14 @@ exports.register = async (req, res) => {
 
     const user = await User.create(userData);
     
-    // Send verification email IMMEDIATELY (before response)
-    console.log('[REGISTER] Sending verification email to:', user.email);
-    console.log('[REGISTER] Generated OTP:', otp);
-    
-    const verificationEmail = `
-      <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
-        <div style="background: linear-gradient(135deg, #16a34a 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 10px;">
-          <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to Yenege!</h1>
-          <p style="color: #e5e7eb; margin-top: 10px;">Ethiopia's Premier Online Marketplace</p>
-        </div>
-        
-        <div style="background: white; padding: 30px; border-radius: 10px; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-          <h2 style="color: #1f2937; margin-top: 0;">Verify Your Email</h2>
-          <p style="color: #4b5563; line-height: 1.6;">Hello ${name},</p>
-          <p style="color: #4b5563; line-height: 1.6;">Thank you for registering on Yenege! To complete your registration, please use the verification code below:</p>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <div style="display: inline-block; padding: 20px 40px; background: linear-gradient(135deg, #16a34a 0%, #059669 100%); color: white; font-size: 32px; font-weight: bold; letter-spacing: 5px; border-radius: 8px;">
-              ${otp}
-            </div>
-          </div>
-          
-          <p style="color: #4b5563; line-height: 1.6;">This code will expire in <strong>1 hour</strong>.</p>
-          <p style="color: #4b5563; line-height: 1.6;">If you didn't create this account, please ignore this email.</p>
-          
-          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-          
-          <p style="color: #6b7280; font-size: 14px;">Best regards,<br>The Yenege Team</p>
-        </div>
-        
-        <div style="text-align: center; margin-top: 20px; color: #6b7280; font-size: 12px;">
-          <p>&copy; ${new Date().getFullYear()} Yenege Marketplace. All rights reserved.</p>
-        </div>
-      </div>
-    `;
-
-    try {
-      const emailSent = await sendEmail({
-        email: user.email,
-        subject: 'Verify Your Email - Yenege Marketplace',
-        html: verificationEmail
-      });
-
-      if (emailSent) {
-        console.log('[REGISTER] ✅ Verification email sent successfully to:', user.email);
-      } else {
-        console.error('[REGISTER] ❌ Failed to send verification email to:', user.email);
-      }
-    } catch (emailError) {
-      console.error('[REGISTER] ❌ Email sending error:', emailError.message);
-      console.error('[REGISTER] Full error:', emailError);
-    }
-
-    // Generate auth token
+    // Generate auth token immediately
     const token = generateToken(user._id);
 
-    // Respond with token but frontend should still show OTP verification
+    // Respond instantly with token (bypassing OTP)
     res.status(201).json({
-      message: "Registration successful. Please verify your email with the code sent to your inbox.",
+      message: "Registration successful.",
       token,
-      user: formatUserResponse(user),
-      requiresVerification: true
+      user: formatUserResponse(user)
     });
 
     // Notify admins in the background (non-blocking)
