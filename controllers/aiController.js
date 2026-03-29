@@ -3,6 +3,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// Updated to use Gemini 3.1 Flash Lite Preview (as requested)
 const MODEL_NAME = 'gemini-3.1-flash-lite-preview';
 
 const SYSTEM_PROMPT = `You are an AI assistant for Yenege, an Ethiopian artisan digital marketplace that empowers local artisans and preserves cultural heritage.
@@ -37,35 +38,20 @@ exports.chat = async (req, res) => {
       ? '\n\nIMPORTANT: The user has selected Amharic (አማርኛ) as their language. You MUST respond entirely in Amharic script. Do not use English in your response unless quoting a product name that has no Amharic equivalent.'
       : '\n\nRespond in English.';
 
-    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
-
-    const safeHistory = [];
-    let lastRole = 'model';
-    for (const msg of history) {
-      if (msg.role !== lastRole) {
-        safeHistory.push(msg);
-        lastRole = msg.role;
+    const model = genAI.getGenerativeModel({ 
+      model: MODEL_NAME,
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 1024,
       }
-    }
-
-    const chat = model.startChat({
-      history: [
-        {
-          role: 'user',
-          parts: [{ text: SYSTEM_PROMPT + langInstruction }],
-        },
-        {
-          role: 'model',
-          parts: [{ text: language === 'am' ? 'ገባኝ። ሁሉም ምላሾቼ በአማርኛ ይሆናሉ።' : 'I understand. I am ready to assist users with Yenege marketplace as a helpful AI assistant.' }],
-        },
-        ...safeHistory.map(msg => ({
-          role: msg.role,
-          parts: [{ text: msg.content }],
-        })),
-      ],
     });
 
-    const result = await chat.sendMessage(message);
+    // Build conversation with system instruction
+    const fullPrompt = `${SYSTEM_PROMPT}${langInstruction}\n\nUser: ${message}`;
+
+    const result = await model.generateContent(fullPrompt);
     const response = await result.response;
     const text = response.text();
 
@@ -76,19 +62,21 @@ exports.chat = async (req, res) => {
     });
   } catch (error) {
     console.error('AI Chat Error:', error.message);
+    console.error('Full error:', error);
     
     // Check if error is due to Rate Limiting (429) or Service Unavailable (503)
-    const isRateLimit = error.message.includes('429');
-    const isOverloaded = error.message.includes('503');
+    const statusCode = error.response?.status || error.code;
+    const isRateLimit = statusCode === 429 || error.message.includes('429') || error.message.includes('rate limit');
+    const isOverloaded = statusCode === 503 || error.message.includes('503');
     
     res.status(isRateLimit ? 429 : isOverloaded ? 503 : 500).json({
       success: false,
       message: isRateLimit 
-        ? 'Too many requests. Please wait a moment.' 
+        ? 'Too many requests. Please wait a moment and try again.' 
         : isOverloaded 
-          ? 'The AI is currently overloaded with requests. Please try again soon.'
-          : 'Sorry, I encountered an error. Please try again later.',
-      error: error.message,
+          ? 'The AI service is temporarily unavailable. Please try again soon.'
+          : 'Sorry, I encountered an error while processing your request. Please try again later.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 };
@@ -101,7 +89,15 @@ exports.getRecommendations = async (req, res) => {
   try {
     const { preferences, occasion, budget, language = 'en' } = req.body;
 
-    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+    const model = genAI.getGenerativeModel({ 
+      model: MODEL_NAME,
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 1024,
+      }
+    });
 
     const langNote = language === 'am'
       ? '\n\nIMPORTANT: Respond entirely in Amharic (አማርኛ) script.'
@@ -127,18 +123,20 @@ Provide 3-5 specific product recommendations with brief explanations of why they
     });
   } catch (error) {
     console.error('AI Recommendations Error:', error.message);
+    console.error('Full error:', error);
 
-    const isRateLimit = error.message.includes('429');
-    const isOverloaded = error.message.includes('503');
+    const statusCode = error.response?.status || error.code;
+    const isRateLimit = statusCode === 429 || error.message.includes('429') || error.message.includes('rate limit');
+    const isOverloaded = statusCode === 503 || error.message.includes('503');
 
     res.status(isRateLimit ? 429 : isOverloaded ? 503 : 500).json({
       success: false,
       message: isRateLimit 
-        ? 'Too many requests. Please wait a moment.' 
+        ? 'Too many requests. Please wait a moment and try again.' 
         : isOverloaded 
-          ? 'The AI is currently overloaded with requests. Please try again soon.'
+          ? 'The AI service is temporarily unavailable. Please try again soon.'
           : 'Sorry, I could not generate recommendations at this time.',
-      error: error.message,
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 };
@@ -150,7 +148,15 @@ exports.sellerAssist = async (req, res) => {
   try {
     const { question, productInfo, language = 'en' } = req.body;
 
-    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+    const model = genAI.getGenerativeModel({ 
+      model: MODEL_NAME,
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 1024,
+      }
+    });
 
     const langNote = language === 'am'
       ? '\n\nIMPORTANT: Respond entirely in Amharic (አማርኛ) script.'
@@ -181,18 +187,20 @@ Be encouraging and supportive of traditional craftsmanship.${langNote}`;
     });
   } catch (error) {
     console.error('AI Seller Assist Error:', error.message);
+    console.error('Full error:', error);
 
-    const isRateLimit = error.message.includes('429');
-    const isOverloaded = error.message.includes('503');
+    const statusCode = error.response?.status || error.code;
+    const isRateLimit = statusCode === 429 || error.message.includes('429') || error.message.includes('rate limit');
+    const isOverloaded = statusCode === 503 || error.message.includes('503');
 
     res.status(isRateLimit ? 429 : isOverloaded ? 503 : 500).json({
       success: false,
       message: isRateLimit 
-        ? 'Too many requests. Please wait a moment.' 
+        ? 'Too many requests. Please wait a moment and try again.' 
         : isOverloaded 
-          ? 'The AI is currently overloaded with requests. Please try again soon.'
+          ? 'The AI service is temporarily unavailable. Please try again soon.'
           : 'Sorry, I could not assist at this time.',
-      error: error.message,
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 };
