@@ -6,7 +6,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // Updated to use Gemini 3.1 Flash Lite Preview (as requested)
 const MODEL_NAME = 'gemini-3.1-flash-lite-preview';
 
-const SYSTEM_PROMPT = `You are an AI assistant for Yenege, an Ethiopian artisan digital marketplace that empowers local artisans and preserves cultural heritage.
+const SYSTEM_PROMPT = `You are a concise AI assistant for Yenege, an Ethiopian artisan digital marketplace.
 
 Your role is to help users with:
 1. Customer Support - Answer questions about products, orders, shipping, returns, and account issues
@@ -20,6 +20,14 @@ Key information about Yenege:
 - All products are handmade by Ethiopian artisans
 - The platform removes middlemen to ensure fair income for artisans
 - Supports preserving ancient Ethiopian crafts and traditions
+
+COMMUNICATION STYLE:
+- Be CONCISE and DIRECT - get straight to the point
+- Keep responses under 150 words unless detailed explanation is specifically requested
+- Use bullet points when listing multiple items
+- Focus on the CORE answer first, then add brief context if needed
+- Avoid lengthy introductions or unnecessary explanations
+- If user asks a simple question, give a simple answer
 
 Always be helpful, friendly, and culturally respectful. If you don't know something specific about an order or account, direct users to contact support.`;
 
@@ -35,21 +43,21 @@ exports.chat = async (req, res) => {
     }
 
     const langInstruction = language === 'am'
-      ? '\n\nIMPORTANT: The user has selected Amharic (አማርኛ) as their language. You MUST respond entirely in Amharic script. Do not use English in your response unless quoting a product name that has no Amharic equivalent.'
-      : '\n\nRespond in English.';
+      ? '\n\nIMPORTANT: Respond in Amharic (አማርኛ). Be CONCISE and DIRECT - keep responses under 150 words.'
+      : '\n\nRespond in English. Be CONCISE and DIRECT - keep responses under 150 words.';
 
     const model = genAI.getGenerativeModel({ 
       model: MODEL_NAME,
       generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1024,
+        temperature: 0.6,        // More focused, less creative
+        topK: 30,               // Narrower selection for consistency
+        topP: 0.9,              // Higher probability tokens
+        maxOutputTokens: 512,   // Limit to shorter responses
       }
     });
 
-    // Build conversation with system instruction
-    const fullPrompt = `${SYSTEM_PROMPT}${langInstruction}\n\nUser: ${message}`;
+    // Build conversation with system instruction - emphasize brevity
+    const fullPrompt = `${SYSTEM_PROMPT}${langInstruction}\n\nUser Question: ${message}\n\nConcise Answer:`;
 
     const result = await model.generateContent(fullPrompt);
     const response = await result.response;
@@ -92,15 +100,15 @@ exports.getRecommendations = async (req, res) => {
     const model = genAI.getGenerativeModel({ 
       model: MODEL_NAME,
       generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1024,
+        temperature: 0.6,
+        topK: 30,
+        topP: 0.9,
+        maxOutputTokens: 512,
       }
     });
 
     const langNote = language === 'am'
-      ? '\n\nIMPORTANT: Respond entirely in Amharic (አማርኛ) script.'
+      ? '\n\nRespond in Amharic (አማርኛ). Be CONCISE - under 150 words.'
       : '';
 
     const prompt = `As a Yenege marketplace assistant, recommend Ethiopian artisan products based on:
@@ -110,7 +118,7 @@ exports.getRecommendations = async (req, res) => {
 
 Available categories: Textiles & Shawls, Baskets & Home Decor, Coffee Ceremony items, Jewelry, Pottery & Ceramics, Traditional Clothing, Leather Goods, Paintings & Art.
 
-Provide 3-5 specific product recommendations with brief explanations of why they match the request. Include cultural significance where relevant.${langNote}`;
+Provide 3-5 specific product recommendations with brief explanations. Be CONCISE and DIRECT.${langNote}`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -151,30 +159,30 @@ exports.sellerAssist = async (req, res) => {
     const model = genAI.getGenerativeModel({ 
       model: MODEL_NAME,
       generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1024,
+        temperature: 0.6,
+        topK: 30,
+        topP: 0.9,
+        maxOutputTokens: 512,
       }
     });
 
     const langNote = language === 'am'
-      ? '\n\nIMPORTANT: Respond entirely in Amharic (አማርኛ) script.'
+      ? '\n\nRespond in Amharic (አማርኛ). Be CONCISE - under 150 words.'
       : '';
 
-    const prompt = `As a Yenege marketplace seller assistant, help with the following:
+    const prompt = `As a Yenege marketplace seller assistant, help with:
 
 Question: ${question}
-${productInfo ? `Product Information: ${JSON.stringify(productInfo)}` : ''}
+${productInfo ? `Product Info: ${JSON.stringify(productInfo)}` : ''}
 
-Provide helpful, actionable advice for Ethiopian artisans selling on Yenege. Consider:
+Provide CONCISE, actionable advice for Ethiopian artisans. Focus on:
 - Product listing optimization
-- Pricing strategies for handmade goods
-- Cultural storytelling in descriptions
+- Pricing strategies
+- Cultural storytelling
 - Photography tips
 - Customer engagement
 
-Be encouraging and supportive of traditional craftsmanship.${langNote}`;
+Be direct and supportive.${langNote}`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
