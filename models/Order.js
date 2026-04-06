@@ -30,6 +30,11 @@ const orderSchema = new mongoose.Schema(
             fullName: { type: String, required: true },
             phone: { type: String, required: true },
             address: { type: String, required: true },
+            // Shipping geolocation (optional)
+            location: {
+                lat: { type: Number },
+                lng: { type: Number }
+            },
             city: { type: String, required: true },
             country: { type: String, default: "Ethiopia" },
         },

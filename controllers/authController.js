@@ -218,7 +218,7 @@ exports.updateProfile = async (req, res) => {
 // Become a seller (upgrade from buyer)
 exports.becomeSeller = async (req, res) => {
   try {
-    const { businessName, businessDescription, phone, address, city } = req.body;
+    const { businessName, businessDescription, phone, address, city, lat, lng } = req.body;
 
     const user = await User.findById(req.user._id);
     if (!user) {
@@ -238,6 +238,11 @@ exports.becomeSeller = async (req, res) => {
       city: city || "",
       verified: false
     };
+
+    // Optional: store provided geolocation for seller
+    if (lat !== undefined && lng !== undefined) {
+      user.sellerProfile.location = { lat: Number(lat), lng: Number(lng) };
+    }
 
     await user.save();
 

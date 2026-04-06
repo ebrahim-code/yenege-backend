@@ -37,6 +37,11 @@ const userSchema = new mongoose.Schema(
       phone: { type: String },
       address: { type: String },
       city: { type: String },
+      // Geolocation for seller (optional)
+      location: {
+        lat: { type: Number },
+        lng: { type: Number }
+      },
       country: { type: String, default: "Ethiopia" },
       verified: { type: Boolean, default: false },
       avatar: { type: String },
